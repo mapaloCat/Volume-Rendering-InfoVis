@@ -1,0 +1,34 @@
+Metadata-Version: 2.1
+Name: itk-registration
+Version: 5.0.1
+Summary: ITK is an open-source toolkit for multidimensional image analysis
+Home-page: https://itk.org/
+Author: Insight Software Consortium
+Author-email: community@itk.org
+License: Apache
+Download-URL: https://itk.org/ITK/resources/software.html
+Keywords: ITK InsightToolkit segmentation registration image imaging
+Platform: UNKNOWN
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: C++
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Education
+Classifier: Intended Audience :: Healthcare Industry
+Classifier: Intended Audience :: Science/Research
+Classifier: Topic :: Scientific/Engineering
+Classifier: Topic :: Scientific/Engineering :: Medical Science Apps.
+Classifier: Topic :: Scientific/Engineering :: Information Analysis
+Classifier: Topic :: Software Development :: Libraries
+Classifier: Operating System :: Android
+Classifier: Operating System :: Microsoft :: Windows
+Classifier: Operating System :: POSIX
+Classifier: Operating System :: Unix
+Classifier: Operating System :: MacOS
+Requires-Dist: itk-filtering (==5.0.1)
+
+ITK is an open-source, cross-platform library that provides developers with an extensive suite of software tools for image analysis. Developed through extreme programming methodologies, ITK employs leading-edge algorithms for registering and segmenting multidimensional scientific images.
+
+This package addresses the registration problem:  find the spatial transformation between two images. This is a high level package that makes use of many lower level packages.
+
