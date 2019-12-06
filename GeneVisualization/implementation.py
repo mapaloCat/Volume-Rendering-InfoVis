@@ -25,6 +25,27 @@ def get_voxel(volume: Volume, x: float, y: float, z: float):
 
     return volume.data[x, y, z]
 
+def trilinear_interpolation(volume: Volume, x: float, y: float, z: float):
+    # check for differences
+    # Keeop object between boundaries
+    if x < 0 or y < 0 or z < 0 or x >= volume.dim_x or y >= volume.dim_y or z >= volume.dim_z:
+        return 0
+
+    voxel =  (np.array([0,0,0]) * (1 - x) * (1 - y) * (1 - z) +
+    np.array([1, 0, 0]) *  x * (1 - y) * (1 - z) +
+    np.array([0, 1, 0]) * (1 - x) * y * (1 - z) +
+    np.array([0, 0, 1]) * (1 - x) * (1 - y) * z +
+    np.array([1, 0, 1]) * x * (1 - y) * z +
+    np.array([0, 1, 1]) * (1 - x) * y * z +
+    np.array([1, 1, 0]) * x * y * (1 - z) +
+    np.array([1, 1, 1]) * x * y * z)
+
+    coX = math.floor(voxel[0])
+    coY = math.floor(voxel[1])
+    coZ = math.floor(voxel[2])
+
+    return volume.data[coX, coY, coZ]
+
 
 
 class RaycastRendererImplementation(RaycastRenderer):
@@ -76,7 +97,8 @@ class RaycastRendererImplementation(RaycastRenderer):
                                      volume_center[2]
 
                 # Get voxel value
-                value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
+                #value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
+                value = trilinear_interpolation(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
 
                 # Normalize value to be between 0 and 1
                 red = value / volume_maximum

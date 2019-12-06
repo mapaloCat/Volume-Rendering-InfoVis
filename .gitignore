@@ -1,3 +1,23 @@
 # Ignore folders
 venv
 .idea
+pycache
+__pycache__
+!**/__pycache__/
+
+
+# file types
+*.pyc
+*.pyo
+
+# Distribution / packaging
+bin/
+build/
+develop-eggs/
+dist/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
