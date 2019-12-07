@@ -26,12 +26,19 @@ def get_voxel(volume: Volume, x: float, y: float, z: float):
     return volume.data[x, y, z]
 
 def trilinear_interpolation(volume: Volume, x: float, y: float, z: float):
-
-    # check for differences
+    """
+    Retrieves the value of a voxel for the given coordinates using trilinear interpolation.
+    :param volume: Volume from which the voxel will be retrieved.
+    :param x: X coordinate of the voxel
+    :param y: Y coordinate of the voxel
+    :param z: Z coordinate of the voxel
+    :return: Voxel value
+    """
     # Keep object between boundaries
     if x < 0 or y < 0 or z < 0 or x >= volume.dim_x or y >= volume.dim_y or z >= volume.dim_z:
         return 0
 
+    # alternative method wikipedia
     voxel = (np.array([0,0,0]) * (1 - x) * (1 - y) * (1 - z) +
     np.array([1, 0, 0]) *  x * (1 - y) * (1 - z) +
     np.array([0, 1, 0]) * (1 - x) * y * (1 - z) +
@@ -58,7 +65,7 @@ class RaycastRendererImplementation(RaycastRenderer):
         """Clears the image data"""
         self.image.fill(0)
 
-    def render_slicer(self, view_matrix: np.ndarray, volume: Volume, image_size: int, image: np.ndarray):
+    def render_slicer(self, view_matrix: np.ndarray, volume: Volume, image_size: int, image: np.ndarray, trilinear: bool=False):
         # Clear the image
         self.clear_image()
 
@@ -94,10 +101,12 @@ class RaycastRendererImplementation(RaycastRenderer):
                 # Get the voxel coordinate Z
                 voxel_coordinate_z = u_vector[2] * (i - image_center) + v_vector[2] * (j - image_center) + \
                                      volume_center[2]
-
                 # Get voxel value
-                #value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
-                value = trilinear_interpolation(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
+                if trilinear:
+                    value = trilinear_interpolation(volume, voxel_coordinate_x, voxel_coordinate_y,
+                                                    voxel_coordinate_z)
+                else:
+                    value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
 
                 # Normalize value to be between 0 and 1
                 red = value / volume_maximum
@@ -118,7 +127,7 @@ class RaycastRendererImplementation(RaycastRenderer):
                 image[(j * image_size + i) * 4 + 3] = alpha
 
     # TODO: Implement MIP function
-    def render_mip(self, view_matrix: np.ndarray, volume: Volume, image_size: int, image: np.ndarray):
+    def render_mip(self, view_matrix: np.ndarray, volume: Volume, image_size: int, image: np.ndarray, trilinear: bool=False):
         # Clear the image
         self.clear_image()
 
@@ -139,12 +148,12 @@ class RaycastRendererImplementation(RaycastRenderer):
         volume_maximum = volume.get_maximum()
 
         # Define a step size to make the loop faster
-        step = 2 if self.interactive_mode else 1
+        step = 10 if self.interactive_mode else 1
 
         for i in range(0, image_size, step):
             for j in range(0, image_size, step):
-                temp = []
-                for k in range(0, image_size, 10):
+                values = []
+                for k in range(0, image_size, step):
                     # Get the voxel coordinate X
                     voxel_coordinate_x = u_vector[0] * (i - image_center) + v_vector[0] * (j - image_center) + \
                                          view_vector[0] * (k - image_center) + volume_center[0]
@@ -153,18 +162,23 @@ class RaycastRendererImplementation(RaycastRenderer):
                     voxel_coordinate_y = u_vector[1] * (i - image_center) + v_vector[1] * (j - image_center) + \
                                          view_vector[1] * (k - image_center) + volume_center[1]
 
-                    # Get the voxel coordinate Y
+                    # Get the voxel coordinate Z
                     voxel_coordinate_z = u_vector[2] * (i - image_center) + v_vector[2] * (j - image_center) + \
                                          view_vector[2] * (k - image_center) + volume_center[2]
+                    # Get voxel value
+                    if trilinear:
+                        value = trilinear_interpolation(volume, voxel_coordinate_x, voxel_coordinate_y,
+                                                        voxel_coordinate_z)
+                    else:
+                        value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
+                    values.append(value)
 
-                    value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
-                    # value = trilinear_interpolation(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
-                    temp.append(value)
+                    # Break when max voxel value is found
                     if value == 205:
                         break
 
                 # Normalize value to be between 0 and 1
-                red = max(temp) / volume_maximum
+                red = max(values) / volume_maximum
                 green = red
                 blue = red
                 alpha = 1.0 if red > 0 else 0.0
@@ -182,7 +196,7 @@ class RaycastRendererImplementation(RaycastRenderer):
                 image[(j * image_size + i) * 4 + 3] = alpha
 
     # TODO: Implement Compositing function. TFColor is already imported. self.tfunc is the current transfer function.
-    def render_compositing(self, view_matrix: np.ndarray, volume: Volume, image_size: int, image: np.ndarray):
+    def render_compositing(self, view_matrix: np.ndarray, volume: Volume, image_size: int, image: np.ndarray, trilinear: bool=False):
         # Clear the image
         self.clear_image()
 
@@ -203,12 +217,12 @@ class RaycastRendererImplementation(RaycastRenderer):
         volume_maximum = volume.get_maximum()
 
         # Define a step size to make the loop faster
-        step = 2 if self.interactive_mode else 1
+        step = 10 if self.interactive_mode else 1
 
         for i in range(0, image_size, step):
             for j in range(0, image_size, step):
-                colors = TFColor(0, 0, 0, 0)
-                for k in range(0, image_size, 10):
+                colors = TFColor() # initialize color
+                for k in range(0, image_size, step):
                     # Get the voxel coordinate X
                     voxel_coordinate_x = u_vector[0] * (i - image_center) + v_vector[0] * (j - image_center) + \
                                          view_vector[0] * (k - image_center) + volume_center[0]
@@ -220,18 +234,21 @@ class RaycastRendererImplementation(RaycastRenderer):
                     # Get the voxel coordinate Y
                     voxel_coordinate_z = u_vector[2] * (i - image_center) + v_vector[2] * (j - image_center) + \
                                          view_vector[2] * (k - image_center) + volume_center[2]
+                    # Get voxel value
+                    if trilinear:
+                        value = trilinear_interpolation(volume, voxel_coordinate_x, voxel_coordinate_y,
+                                                        voxel_coordinate_z)
+                    else:
+                        value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
 
-                    value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
-                    # value = trilinear_interpolation(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
-
+                    # Compositing function
                     new_color = self.tfunc.get_color(value)
-
                     colors.r = new_color.a * new_color.r + (1 - new_color.a) * colors.r
                     colors.g = new_color.a * new_color.g + (1 - new_color.a) * colors.g
                     colors.b = new_color.a * new_color.b + (1 - new_color.a) * colors.b
                     colors.a = new_color.a
 
-                # print(colors)
+                # Set colors
                 red = colors.r
                 green = colors.g
                 blue = colors.b
