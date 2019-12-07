@@ -285,35 +285,51 @@ class RaycastRendererImplementation(RaycastRenderer):
         # Center of the image. Image is squared
         image_center = image_size / 2
 
+        print("annotation: ", annotation_volume)
+        print("energy: ", energy_volumes)
+
+        for x in energy_volumes:
+            print("key: ", x)
+            print("value: ", energy_volumes[x])
+
+        volume = energy_volumes[x]
+
         # Center of the volume (3-dimensional)
-        volume_center = [annotation_volume.dim_x / 2, annotation_volume.dim_y / 2, annotation_volume.dim_z / 2]
-        volume_maximum = annotation_volume.get_maximum()
+        volume_center = [volume.dim_x / 2, volume.dim_y / 2, volume.dim_z / 2]
+        volume_maximum = volume.get_maximum()
 
         # Define a step size to make the loop faster
         step = 2 if self.interactive_mode else 1
 
         for i in range(0, image_size, step):
             for j in range(0, image_size, step):
-                # Get the voxel coordinate X
-                voxel_coordinate_x = u_vector[0] * (i - image_center) + v_vector[0] * (j - image_center) + \
-                                     volume_center[0]
+                values = []
+                for k in range(0, image_size, 10):
+                    # Get the voxel coordinate X
+                    voxel_coordinate_x = u_vector[0] * (i - image_center) + v_vector[0] * (j - image_center) + \
+                                         view_vector[0] * (k - image_center) + volume_center[0]
 
-                # Get the voxel coordinate Y
-                voxel_coordinate_y = u_vector[1] * (i - image_center) + v_vector[1] * (j - image_center) + \
-                                     volume_center[1]
+                    # Get the voxel coordinate Y
+                    voxel_coordinate_y = u_vector[1] * (i - image_center) + v_vector[1] * (j - image_center) + \
+                                         view_vector[1] * (k - image_center) + volume_center[1]
 
-                # Get the voxel coordinate Z
-                voxel_coordinate_z = u_vector[2] * (i - image_center) + v_vector[2] * (j - image_center) + \
-                                     volume_center[2]
-                # Get voxel value
-                if trilinear:
-                    value = trilinear_interpolation(annotation_volume, voxel_coordinate_x, voxel_coordinate_y,
-                                                    voxel_coordinate_z)
-                else:
-                    value = get_voxel(annotation_volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
+                    # Get the voxel coordinate Z
+                    voxel_coordinate_z = u_vector[2] * (i - image_center) + v_vector[2] * (j - image_center) + \
+                                         view_vector[2] * (k - image_center) + volume_center[2]
+                    # Get voxel value
+                    if trilinear:
+                        value = trilinear_interpolation(volume, voxel_coordinate_x, voxel_coordinate_y,
+                                                        voxel_coordinate_z)
+                    else:
+                        value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
+                    values.append(value)
+
+                    # Break when max voxel value is found
+                    if value == 205:
+                        break
 
                 # Normalize value to be between 0 and 1
-                red = value / volume_maximum
+                red = max(values) / volume_maximum
                 green = red
                 blue = red
                 alpha = 1.0 if red > 0 else 0.0
