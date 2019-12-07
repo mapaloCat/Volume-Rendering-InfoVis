@@ -26,12 +26,13 @@ def get_voxel(volume: Volume, x: float, y: float, z: float):
     return volume.data[x, y, z]
 
 def trilinear_interpolation(volume: Volume, x: float, y: float, z: float):
+
     # check for differences
-    # Keeop object between boundaries
+    # Keep object between boundaries
     if x < 0 or y < 0 or z < 0 or x >= volume.dim_x or y >= volume.dim_y or z >= volume.dim_z:
         return 0
 
-    voxel =  (np.array([0,0,0]) * (1 - x) * (1 - y) * (1 - z) +
+    voxel = (np.array([0,0,0]) * (1 - x) * (1 - y) * (1 - z) +
     np.array([1, 0, 0]) *  x * (1 - y) * (1 - z) +
     np.array([0, 1, 0]) * (1 - x) * y * (1 - z) +
     np.array([0, 0, 1]) * (1 - x) * (1 - y) * z +
@@ -56,8 +57,6 @@ class RaycastRendererImplementation(RaycastRenderer):
     def clear_image(self):
         """Clears the image data"""
         self.image.fill(0)
-
-    # TODO: Implement trilinear interpolation
 
     def render_slicer(self, view_matrix: np.ndarray, volume: Volume, image_size: int, image: np.ndarray):
         # Clear the image
@@ -159,6 +158,7 @@ class RaycastRendererImplementation(RaycastRenderer):
                                          view_vector[2] * (k - image_center) + volume_center[2]
 
                     value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
+                    # value = trilinear_interpolation(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
                     temp.append(value)
                     if value == 205:
                         break
@@ -207,7 +207,7 @@ class RaycastRendererImplementation(RaycastRenderer):
 
         for i in range(0, image_size, step):
             for j in range(0, image_size, step):
-                sum_color = TFColor(0, 0, 0, 0)
+                colors = TFColor(0, 0, 0, 0)
                 for k in range(0, image_size, 10):
                     # Get the voxel coordinate X
                     voxel_coordinate_x = u_vector[0] * (i - image_center) + v_vector[0] * (j - image_center) + \
@@ -221,18 +221,21 @@ class RaycastRendererImplementation(RaycastRenderer):
                     voxel_coordinate_z = u_vector[2] * (i - image_center) + v_vector[2] * (j - image_center) + \
                                          view_vector[2] * (k - image_center) + volume_center[2]
 
-                    color = self.tfunc.get_color(
-                        get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z))
+                    value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
+                    # value = trilinear_interpolation(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
 
-                    sum_color.r = color.a * color.r + (1 - color.a) * sum_color.r
-                    sum_color.g = color.a * color.g + (1 - color.a) * sum_color.g
-                    sum_color.b = color.a * color.b + (1 - color.a) * sum_color.b
-                    sum_color.a = color.a + (1 - color.a) * sum_color.a
+                    new_color = self.tfunc.get_color(value)
 
-                red = sum_color.r
-                green = sum_color.g
-                blue = sum_color.b
-                alpha = sum_color.a
+                    colors.r = new_color.a * new_color.r + (1 - new_color.a) * colors.r
+                    colors.g = new_color.a * new_color.g + (1 - new_color.a) * colors.g
+                    colors.b = new_color.a * new_color.b + (1 - new_color.a) * colors.b
+                    colors.a = new_color.a
+
+                # print(colors)
+                red = colors.r
+                green = colors.g
+                blue = colors.b
+                alpha = 1.0 if red > 0 else 0.0
 
                 # Compute the color value (0...255)
                 red = math.floor(red * 255) if red < 255 else 255
