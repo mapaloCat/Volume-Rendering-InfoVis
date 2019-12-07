@@ -76,7 +76,7 @@ class RaycastRendererImplementation(RaycastRenderer):
         v_vector = view_matrix[4:7]
 
         # View vector. See documentation in parent's class
-        # view_vector = view_matrix[8:11]
+        view_vector = view_matrix[8:11]
 
         # Center of the image. Image is squared
         image_center = image_size / 2
