@@ -506,3 +506,5 @@ class GLFrame(wx.Frame):
 
     def on_challenge_data_changed(self, enable):
         self.raycast_tab.enable_multivolume_mode(enable)
+
+

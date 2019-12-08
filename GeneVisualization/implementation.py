@@ -286,62 +286,95 @@ class RaycastRendererImplementation(RaycastRenderer):
         # Center of the image. Image is squared
         image_center = image_size / 2
 
-        print(annotation_volume)
         volume = annotation_volume
-        print(annotation_volume.get_maximum())
 
+        import matplotlib.pyplot as plt
+        volumes = []
+        #volumes.append(annotation_volume)
         for x in energy_volumes:
             volume = energy_volumes[x]
-            print(volume)
-            print(volume.get_maximum())
-
+            volumes.append(volume)
+            #print(volume.get_maximum())
+            data = volume.data
+            histogram = np.histogram(volume.data, bins=np.arange(volume.get_maximum() + 1))[0]
+            #print(histogram)
 
         # Center of the volume (3-dimensional)
         volume_center = [volume.dim_x / 2, volume.dim_y / 2, volume.dim_z / 2]
         volume_maximum = volume.get_maximum()
 
-        self.tfunc.init(volume.get_minimum(), volume.get_maximum())
+        #self.tfunc.init(volume.get_minimum(), volume.get_maximum())
 
         # Define a step size to make the loop faster
         step = 2 if self.interactive_mode else 1
-        step_k = 10
+        step_k = 50
+
+        #color
+        colorRed = [255 / 255, 0 / 255, 0 / 255]
+
+        colorLila = [127 / 255, 0 / 255, 255 / 255]
+        colorPurple = [255 / 255, 0 / 255, 127 / 255]
+        colorBlue = [0 / 255, 0 / 255, 255 / 255]
+        colorGreen = [0 / 255, 255/ 255, 0 / 255]
+        colorYellow = [255 / 255, 255 / 255, 0 / 255]
+        colorBrown = [255 / 255, 127 / 255, 0 / 255]
+        colorLightgreen = [127/ 255, 255 / 255, 0 / 255]
+        colorLightBlue = [0  / 255, 127 / 255, 255 / 55]
+        colortorqoise = [0 / 255, 255 / 255, 255/ 255]
+        colors = [colorLila, colorLightgreen, colorPurple, colorBlue, colorGreen, colorYellow, colortorqoise, colorLightgreen, colorRed]
+
 
         for i in range(0, image_size, step):
             for j in range(0, image_size, step):
-                colors = TFColor()  # initialize color
-                for k in range(0, image_size, step_k):
-                    # Get the voxel coordinate X
-                    voxel_coordinate_x = u_vector[0] * (i - image_center) + v_vector[0] * (j - image_center) + \
-                                         view_vector[0] * (k - image_center) + volume_center[0]
+                counter = 0
+                compValue = 0
+                for x in volumes:
+                    volume = x
+                    compValueVol = 0
+                    for k in range(0, image_size, step_k):
+                        # Get the voxel coordinate X
+                        voxel_coordinate_x = u_vector[0] * (i - image_center) + v_vector[0] * (j - image_center) + \
+                                             view_vector[0] * (k - image_center) + volume_center[0]
 
-                    # Get the voxel coordinate Y
-                    voxel_coordinate_y = u_vector[1] * (i - image_center) + v_vector[1] * (j - image_center) + \
-                                         view_vector[1] * (k - image_center) + volume_center[1]
+                        # Get the voxel coordinate Y
+                        voxel_coordinate_y = u_vector[1] * (i - image_center) + v_vector[1] * (j - image_center) + \
+                                             view_vector[1] * (k - image_center) + volume_center[1]
 
-                    # Get the voxel coordinate Y
-                    voxel_coordinate_z = u_vector[2] * (i - image_center) + v_vector[2] * (j - image_center) + \
-                                         view_vector[2] * (k - image_center) + volume_center[2]
-                    # Get voxel value
-                    if trilinear:
-                        value = trilinear_interpolation(volume, voxel_coordinate_x, voxel_coordinate_y,
-                                                        voxel_coordinate_z)
+                        # Get the voxel coordinate Y
+                        voxel_coordinate_z = u_vector[2] * (i - image_center) + v_vector[2] * (j - image_center) + \
+                                             view_vector[2] * (k - image_center) + volume_center[2]
+                        # Get voxel value
+                        if trilinear:
+                            value = trilinear_interpolation(volume, voxel_coordinate_x, voxel_coordinate_y,
+                                                            voxel_coordinate_z)
+                        else:
+                            value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
+
+                        # Deal with big values in annotation
+                        #if counter == 0:
+                        #    if value > 0:
+                        #        value = 5
+
+                        # Learning function
+                        compValueVol = 0.15 * value + 0.85 * compValue
+
+                    # Take the highest value
+                    if compValueVol > compValue:
+                        compValue = compValueVol
+                        setColor = colors[counter]
+                    # Color pixel if there is a value
+                    if compValue > 0.1 :
+                        red = setColor[0]
+                        green = setColor[1]
+                        blue = setColor[2]
+                        alpha = compValue
+                        print(alpha)
                     else:
-                        value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
-
-                    # Compositing function
-                    # print("value: ", value)
-                    new_color = self.tfunc.get_color(value)
-                    colors.r = new_color.a * new_color.r + (1 - new_color.a) * colors.r
-                    colors.g = new_color.a * new_color.g + (1 - new_color.a) * colors.g
-                    colors.b = new_color.a * new_color.b + (1 - new_color.a) * colors.b
-                    colors.a = new_color.a + (1 - new_color.a) * colors.a
-
-                # Set colors
-                red = colors.r
-                green = colors.g
-                blue = colors.b
-                alpha = colors.a
-
+                        red = 0
+                        green = 0
+                        blue = 0
+                        alpha = 0
+                    counter += 1
                 # Compute the color value (0...255)
                 red = math.floor(red * 255) if red < 255 else 255
                 green = math.floor(green * 255) if green < 255 else 255

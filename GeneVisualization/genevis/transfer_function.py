@@ -44,14 +44,15 @@ class TransferFunction:
         return idx
 
     def set_test_function(self):
+        # X,
         # self.add_control_point(0, .0, .0, .0, .0)
         # self.add_control_point(40, .0, .0, .0, .0)
         # self.add_control_point(75, 1., .666, .0, 1.)
         # self.add_control_point(103, .0, .0, .0, .5)
         # self.add_control_point(205, .0, .0, .0, .0)
-        self.add_control_point(210, .0, .0, .0, .0)
-        self.add_control_point(1000, .0, .0, .0, .0)
-        self.add_control_point(100000, 1., .666, .0, 1.)
+        self.add_control_point(10, 1., .666, .0, 1.)
+        self.add_control_point(2000, 0, .0, .0, .5)
+        self.add_control_point(100000, 0, .0, .0, .5)
         self.add_control_point(10000000, .0, .0, .0, .5)
         self.add_control_point(127201624, .0, .0, .0, .0)
 
