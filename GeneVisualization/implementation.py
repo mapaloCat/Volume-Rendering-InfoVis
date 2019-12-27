@@ -4,6 +4,7 @@ from genevis.transfer_function import TFColor, ControlPoint
 from volume.volume import GradientVolume, Volume
 from collections.abc import ValuesView
 import math
+import matplotlib.pyplot as plt
 
 
 # TODO: Implement trilinear interpolation
@@ -217,98 +218,16 @@ class RaycastRendererImplementation(RaycastRenderer):
         volume_maximum = volume.get_maximum()
         print(volume_maximum)
 
+        print(np.histogram(volume.data, bins=np.arange(volume.get_maximum() + 1))[0])
+        print(np.arange(volume.get_maximum() + 1))
+
         # Define a step size to make the loop faster
         step = 10 if self.interactive_mode else 1
+        step_k = 50
 
         for i in range(0, image_size, step):
             for j in range(0, image_size, step):
                 colors = TFColor() # initialize color
-                for k in range(0, image_size, 50):
-                    # Get the voxel coordinate X
-                    voxel_coordinate_x = u_vector[0] * (i - image_center) + v_vector[0] * (j - image_center) + \
-                                         view_vector[0] * (k - image_center) + volume_center[0]
-
-                    # Get the voxel coordinate Y
-                    voxel_coordinate_y = u_vector[1] * (i - image_center) + v_vector[1] * (j - image_center) + \
-                                         view_vector[1] * (k - image_center) + volume_center[1]
-
-                    # Get the voxel coordinate Y
-                    voxel_coordinate_z = u_vector[2] * (i - image_center) + v_vector[2] * (j - image_center) + \
-                                         view_vector[2] * (k - image_center) + volume_center[2]
-                    # Get voxel value
-                    if trilinear:
-                        value = trilinear_interpolation(volume, voxel_coordinate_x, voxel_coordinate_y,
-                                                        voxel_coordinate_z)
-                    else:
-                        value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
-
-                    # Compositing function
-                    new_color = self.tfunc.get_color(value)
-                    colors.r = new_color.a * new_color.r + (1 - new_color.a) * colors.r
-                    colors.g = new_color.a * new_color.g + (1 - new_color.a) * colors.g
-                    colors.b = new_color.a * new_color.b + (1 - new_color.a) * colors.b
-                    colors.a = new_color.a + (1 - new_color.a) * colors.a
-
-                # Set colors
-                red = colors.r
-                green = colors.g
-                blue = colors.b
-                alpha = colors.a
-
-                # Compute the color value (0...255)
-                red = math.floor(red * 255) if red < 255 else 255
-                green = math.floor(green * 255) if green < 255 else 255
-                blue = math.floor(blue * 255) if blue < 255 else 255
-                alpha = math.floor(alpha * 255) if alpha < 255 else 255
-
-                # Assign color to the pixel i, j
-                image[(j * image_size + i) * 4] = red
-                image[(j * image_size + i) * 4 + 1] = green
-                image[(j * image_size + i) * 4 + 2] = blue
-                image[(j * image_size + i) * 4 + 3] = alpha
-
-    # TODO: Implement function to render multiple energy volumes and annotation volume as a silhouette.
-    def render_mouse_brain(self, view_matrix: np.ndarray, annotation_volume: Volume, energy_volumes: dict,
-                           image_size: int, image: np.ndarray, trilinear: bool=False):
-        # TODO: Implement your code considering these volumes (annotation_volume, and energy_volumes)
-        # Clear the image
-        self.clear_image()
-
-        # U vector. See documentation in parent's class
-        u_vector = view_matrix[0:3]
-
-        # V vector. See documentation in parent's class
-        v_vector = view_matrix[4:7]
-
-        # View vector. See documentation in parent's class
-        view_vector = view_matrix[8:11]
-
-        # Center of the image. Image is squared
-        image_center = image_size / 2
-
-        print(annotation_volume)
-        volume = annotation_volume
-        print(annotation_volume.get_maximum())
-
-        for x in energy_volumes:
-            volume = energy_volumes[x]
-            print(volume)
-            print(volume.get_maximum())
-
-
-        # Center of the volume (3-dimensional)
-        volume_center = [volume.dim_x / 2, volume.dim_y / 2, volume.dim_z / 2]
-        volume_maximum = volume.get_maximum()
-
-        self.tfunc.init(volume.get_minimum(), volume.get_maximum())
-
-        # Define a step size to make the loop faster
-        step = 2 if self.interactive_mode else 1
-        step_k = 10
-
-        for i in range(0, image_size, step):
-            for j in range(0, image_size, step):
-                colors = TFColor()  # initialize color
                 for k in range(0, image_size, step_k):
                     # Get the voxel coordinate X
                     voxel_coordinate_x = u_vector[0] * (i - image_center) + v_vector[0] * (j - image_center) + \
@@ -329,7 +248,6 @@ class RaycastRendererImplementation(RaycastRenderer):
                         value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
 
                     # Compositing function
-                    # print("value: ", value)
                     new_color = self.tfunc.get_color(value)
                     colors.r = new_color.a * new_color.r + (1 - new_color.a) * colors.r
                     colors.g = new_color.a * new_color.g + (1 - new_color.a) * colors.g
@@ -341,12 +259,107 @@ class RaycastRendererImplementation(RaycastRenderer):
                 green = colors.g
                 blue = colors.b
                 alpha = colors.a
+                # print(red, green, blue, alpha)
 
                 # Compute the color value (0...255)
                 red = math.floor(red * 255) if red < 255 else 255
                 green = math.floor(green * 255) if green < 255 else 255
                 blue = math.floor(blue * 255) if blue < 255 else 255
                 alpha = math.floor(alpha * 255) if alpha < 255 else 255
+
+                # Assign color to the pixel i, j
+                image[(j * image_size + i) * 4] = red
+                image[(j * image_size + i) * 4 + 1] = green
+                image[(j * image_size + i) * 4 + 2] = blue
+                image[(j * image_size + i) * 4 + 3] = alpha
+
+    # TODO: Implement function to render multiple energy volumes and annotation volume as a silhouette.
+    def render_mouse_brain(self, view_matrix: np.ndarray, annotation_volume: Volume, energy_volumes: dict,
+                           image_size: int, image: np.ndarray, trilinear: bool=True):
+        # TODO: Implement your code considering these volumes (annotation_volume, and energy_volumes)
+        # Clear the image
+        self.clear_image()
+
+        # U vector. See documentation in parent's class
+        u_vector = view_matrix[0:3]
+
+        # V vector. See documentation in parent's class
+        v_vector = view_matrix[4:7]
+
+        # View vector. See documentation in parent's class
+        view_vector = view_matrix[8:11]
+
+        # Center of the image. Image is squared
+        image_center = image_size / 2
+
+        max_energy_volume = []
+        for key, volume in energy_volumes.items():
+            # print(key, volume)
+            # print(volume.get_maximum())
+            max_energy_volume.append(volume.get_maximum())
+            print(np.histogram(volume.data, bins=np.arange(volume.get_maximum() + 1))[0])
+            print(np.arange(volume.get_maximum() + 1))
+            # print("dim_x: ", volume.dim_x, "dim_y: ", volume.dim_y, "dim_z: ", volume.dim_z)
+
+        # Center of the annotation volume (3-dimensional)
+        volume_center = [volume.dim_x / 2, volume.dim_y / 2, volume.dim_z / 2]
+
+        # Initialize TF
+        self.tfunc.init(0, max(max_energy_volume))
+
+        # Define a step size to make the loop faster
+        step = 2 if self.interactive_mode else 1
+        step_k = 5
+
+        for i in range(0, image_size, step):
+            for j in range(0, image_size, step):
+                colors = TFColor()  # initialize color
+                for k in range(0, image_size, step_k):
+                    # Get the voxel coordinate X
+                    voxel_coordinate_x = u_vector[0] * (i - image_center) + v_vector[0] * (j - image_center) + \
+                                         view_vector[0] * (k - image_center) + volume_center[0]
+
+                    # Get the voxel coordinate Y
+                    voxel_coordinate_y = u_vector[1] * (i - image_center) + v_vector[1] * (j - image_center) + \
+                                         view_vector[1] * (k - image_center) + volume_center[1]
+
+                    # Get the voxel coordinate Y
+                    voxel_coordinate_z = u_vector[2] * (i - image_center) + v_vector[2] * (j - image_center) + \
+                                         view_vector[2] * (k - image_center) + volume_center[2]
+                    energy_values = []
+                    for x in energy_volumes:
+                        volume = energy_volumes[x]
+                        # Get voxel value
+                        if trilinear:
+                            value = trilinear_interpolation(volume, voxel_coordinate_x, voxel_coordinate_y,
+                                                            voxel_coordinate_z)
+                        else:
+                            value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
+                        energy_values.append(value)
+
+                    # Compositing function
+                    new_color = self.tfunc.get_color(max(energy_values))
+                    colors.r = new_color.a * new_color.r + (1 - new_color.a) * colors.r
+                    colors.g = new_color.a * new_color.g + (1 - new_color.a) * colors.g
+                    colors.b = new_color.a * new_color.b + (1 - new_color.a) * colors.b
+                    colors.a = new_color.a + (1 - new_color.a) * colors.a
+                    # if value >= 40:
+                    #     print("value: ", value)
+                    #     print(colors)
+
+                # Set colors
+                red = colors.r
+                green = colors.g
+                blue = colors.b
+                alpha = colors.a
+                # print(red, green, blue, alpha)
+
+                # Compute the color value (0...255)
+                red = math.floor(red * 255) if red < 255 else 255
+                green = math.floor(green * 255) if green < 255 else 255
+                blue = math.floor(blue * 255) if blue < 255 else 255
+                alpha = math.floor(alpha * 255) if alpha < 255 else 255
+                # print(red, green, blue, alpha)
 
                 # Assign color to the pixel i, j
                 image[(j * image_size + i) * 4] = red

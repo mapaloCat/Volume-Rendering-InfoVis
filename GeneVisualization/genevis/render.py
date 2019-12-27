@@ -187,7 +187,8 @@ class RaycastRenderer(ABC):
             self.challenge_texture_id = -1
 
         print("set_annotation_volume function")
-        self.tfunc.set_test_function()
+        if self.energy_volumes:
+            self.tfunc.set_test_function_mb()
 
     def set_mode(self, mode):
         """Convenient method to set renderer's mode."""
