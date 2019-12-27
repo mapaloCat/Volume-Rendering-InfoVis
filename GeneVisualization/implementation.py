@@ -4,7 +4,6 @@ from genevis.transfer_function import TFColor, ControlPoint
 from volume.volume import GradientVolume, Volume
 from collections.abc import ValuesView
 import math
-import matplotlib.pyplot as plt
 
 
 # TODO: Implement trilinear interpolation
@@ -275,7 +274,7 @@ class RaycastRendererImplementation(RaycastRenderer):
 
     # TODO: Implement function to render multiple energy volumes and annotation volume as a silhouette.
     def render_mouse_brain(self, view_matrix: np.ndarray, annotation_volume: Volume, energy_volumes: dict,
-                           image_size: int, image: np.ndarray, trilinear: bool=True):
+                           image_size: int, image: np.ndarray, trilinear: bool=False):
         # TODO: Implement your code considering these volumes (annotation_volume, and energy_volumes)
         # Clear the image
         self.clear_image()
