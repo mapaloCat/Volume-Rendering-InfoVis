@@ -186,10 +186,6 @@ class RaycastRenderer(ABC):
             glDeleteTextures(1, [self.challenge_texture_id])
             self.challenge_texture_id = -1
 
-        print("set_annotation_volume function")
-        if self.energy_volumes:
-            self.tfunc.set_test_function_mb()
-
     def set_mode(self, mode):
         """Convenient method to set renderer's mode."""
 

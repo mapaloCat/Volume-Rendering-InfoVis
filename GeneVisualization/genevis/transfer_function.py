@@ -50,13 +50,6 @@ class TransferFunction:
         self.add_control_point(103, .0, .0, .0, .5)
         self.add_control_point(205, .0, .0, .0, .0)
 
-    def set_test_function_mb(self):
-        self.add_control_point(0, .0, .0, .0, .0)
-        self.add_control_point(5, .1, .0, .0, 1.)
-        self.add_control_point(10, 1., .666, .0, 1.)
-        self.add_control_point(60, .0, .0, .1, 1.)
-        self.add_control_point(128, .0, .0, .0, .0)
-
     def get_color(self, value: int) -> 'TFColor':
         return self.LUT[self.computeLUTindex(value)]
 
