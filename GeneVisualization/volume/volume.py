@@ -74,9 +74,9 @@ class GradientVolume:
         Computes the gradient for the current volume
         """
         # this just initializes all gradients to the vector (0,0,0)
-        self.data = [ZERO_GRADIENT] * (self.volume.dim_x * self.volume.dim_y * self.volume.dim_z)
-        gm = []
-        vv = []
+        self.data = [ZERO_GRADIENT.magnitude] * (self.volume.dim_x * self.volume.dim_y * self.volume.dim_z)
+        # gm = []
+        # vv = []
         for i in range(1, self.volume.dim_x-1):
             for j in range(1, self.volume.dim_y-1):
                 for k in range(1, self.volume.dim_z-1):
@@ -96,17 +96,16 @@ class GradientVolume:
                         normalized = np.array([0, 0, 0])
                     if np.isnan(normalized).any():
                         normalized = np.array([0, 0, 0])
-                    self.data[i + self.volume.dim_x * (j + self.volume.dim_y * k)] = VoxelGradient(normalized[0],
-                                                                                                   normalized[1],
-                                                                                                   normalized[2])
-                    gm.append(self.data[i + self.volume.dim_x * (j + self.volume.dim_y * k)].magnitude)
-                    vv.append(self.volume.data[i, j, k])
+                    self.data[i + self.volume.dim_x * (j + self.volume.dim_y * k)] = \
+                        VoxelGradient(normalized[0], normalized[1], normalized[2]).magnitude
+                    # gm.append(self.data[i + self.volume.dim_x * (j + self.volume.dim_y * k)].magnitude)
+                    # vv.append(self.volume.data[i, j, k])
                     # if self.data[i + self.volume.dim_x * (j + self.volume.dim_y * k)].magnitude!=0:
                     #     print("scalar volume value: ", self.volume.data[i, j, k])
                     #     print("gradient magnitude: ", self.data[i + self.volume.dim_x * (j + self.volume.dim_y * k)].magnitude)
         print(len(self.data))
-        print("range volume value range: ", min(vv), "-", max(vv))
-        print("gradient magnitude range: ", min(gm), "-", max(gm))
+        # print("range volume value: ", min(vv), "-", max(vv))
+        # print("range gradient magnitude: ", min(gm), "-", max(gm))
         # ind = [i for i, j in enumerate(gm) if j == max(gm)]
         # maxg_vv = [vv[i] for i in ind]
         # print("volume values where gradient magnitude is max: ", maxg_vv)

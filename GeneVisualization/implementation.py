@@ -27,6 +27,7 @@ def get_voxel(volume: Volume, x: float, y: float, z: float):
 
     return volume.data[x, y, z]
 
+
 def trilinear_interpolation(volume: Volume, x: float, y: float, z: float):
     """
     Retrieves the value of a voxel for the given coordinates using trilinear interpolation.
@@ -41,8 +42,8 @@ def trilinear_interpolation(volume: Volume, x: float, y: float, z: float):
         return 0
 
     # alternative method wikipedia
-    voxel = (np.array([0,0,0]) * (1 - x) * (1 - y) * (1 - z) +
-    np.array([1, 0, 0]) *  x * (1 - y) * (1 - z) +
+    voxel = (np.array([0, 0, 0]) * (1 - x) * (1 - y) * (1 - z) +
+    np.array([1, 0, 0]) * x * (1 - y) * (1 - z) +
     np.array([0, 1, 0]) * (1 - x) * y * (1 - z) +
     np.array([0, 0, 1]) * (1 - x) * (1 - y) * z +
     np.array([1, 0, 1]) * x * (1 - y) * z +
@@ -55,7 +56,6 @@ def trilinear_interpolation(volume: Volume, x: float, y: float, z: float):
     coZ = math.floor(voxel[2])
 
     return volume.data[coX, coY, coZ]
-
 
 
 class RaycastRendererImplementation(RaycastRenderer):
@@ -299,11 +299,10 @@ class RaycastRendererImplementation(RaycastRenderer):
         image_center = image_size / 2
 
         print("annotation volume info: ")
-        # print(annotation_volume)
         print(annotation_volume.data.shape)
-        # print(annotation_volume.get_maximum())
-        # print(annotation_volume.dim_x/2, annotation_volume.dim_y/2, annotation_volume.dim_z/2)
 
+        # Center of the annotation volume (3-dimensional)
+        volume_center = [annotation_volume.dim_x / 2, annotation_volume.dim_y / 2, annotation_volume.dim_z / 2]
 
         max_energy_volume = []
         for key, volume in energy_volumes.items():
@@ -315,49 +314,48 @@ class RaycastRendererImplementation(RaycastRenderer):
             # print("dim_x: ", volume.dim_x, "dim_y: ", volume.dim_y, "dim_z: ", volume.dim_z)
             # plt.bar(np.arange(volume.get_maximum()),
             #         np.histogram(volume.data, bins=np.arange(volume.get_maximum() + 1))[0], width=0.1)
-            # plt.ylim((0, 5000))
+            # plt.ylim((0, 1000))
             # plt.xlim((1, volume.get_maximum()))
             # plt.show()
             print("energy volume info: ")
             print(volume.data.shape)
+            print("energy volume range: ", volume.get_minimum(), "-", volume.get_maximum())
             # Initialize GradientVolume
+            # print("gradient computation info: ")
             # gv = GradientVolume(volume)
             # print("energy volume range: ", volume.get_minimum(), "-", volume.get_maximum())
             # print("gradient volume info: ")
             # print("max gradient magnitude: ", gv.get_max_gradient_magnitude())
 
-        # Center of the annotation volume (3-dimensional)
-        volume_center = [volume.dim_x / 2, volume.dim_y / 2, volume.dim_z / 2]
-        # print(volume_center)
-
-        palette = [Colour(255,0,0),
-                   Colour(0,255,0),
-                   Colour(0,0,255),
-                   Colour(255,255,0),
-                   Colour(255,0,255),
-                   Colour(0,255,255),
-                   Colour(128,128,0),
-                   Colour(240,128,128),
-                   Colour(152,251,152),
-                   Colour(139,69,19)]
+        # palette = [Colour(255, 0, 0),
+        #            Colour(0, 255, 0),
+        #            Colour(0, 0, 255),
+        #            Colour(255, 255, 0),
+        #            Colour(255, 0, 255),
+        #            Colour(0, 255, 255),
+        #            Colour(128, 128, 0),
+        #            Colour(240, 128, 128),
+        #            Colour(152, 251, 152),
+        #            Colour(139, 69, 19)]
 
         # Initialize TF
         self.tfunc.init(0, max(max_energy_volume))
 
         # set the control points
-        self.tfunc.add_control_point(0, .0, .0, .0, .0)
-        self.tfunc.add_control_point(5, .0, .0, .0, .0)
-        self.tfunc.add_control_point(10, 1., .666, .0, 1.)
-        self.tfunc.add_control_point(60, 0., .0, .0, .5)
-        self.tfunc.add_control_point(100, 0., .0, .0, .0)
+        self.tfunc.add_control_point(0, 0., .0, .0, .0)
+        self.tfunc.add_control_point(2, 0., .0, .0, .0)
+        self.tfunc.add_control_point(4, 1., .666, .0, 1.)
+        self.tfunc.add_control_point(13, 0., 0., .0, 0.5)
+        self.tfunc.add_control_point(17, 0., 0., .0, .0)
+        self.tfunc.add_control_point(21, 1., .0, .0, 1.)
+        self.tfunc.add_control_point(39, 0., .0, .0, 0.5)
+        self.tfunc.add_control_point(87, 0., .0, .0, .0)
 
         # self.tfunc.update_control_point_color(2, palette[9])
 
         # Define a step size to make the loop faster
         step = 2 if self.interactive_mode else 1
         step_k = 10
-
-        temp = []
 
         for i in range(0, image_size, step):
             for j in range(0, image_size, step):
@@ -384,11 +382,14 @@ class RaycastRendererImplementation(RaycastRenderer):
                         else:
                             value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
                         energy_values.append(value)
-                        temp.append(value)
+                    # if value>0 and gv.get_gradient(int(voxel_coordinate_x), int(voxel_coordinate_y), int(voxel_coordinate_z))>=1:
+                    #     # print(voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
+                    #     # print(gv.get_gradient(int(voxel_coordinate_x), int(voxel_coordinate_y), int(voxel_coordinate_z)))
+                    #     print(value)
 
                     # Compositing function
-                    ind = energy_values.index(max(energy_values))
-                    self.tfunc.update_control_point_color(2, palette[ind])
+                    # ind = energy_values.index(max(energy_values))
+                    # self.tfunc.update_control_point_color(2, palette[ind])
                     new_color = self.tfunc.get_color(max(energy_values))
                     # print(new_color)
                     colors.r = new_color.a * new_color.r + (1 - new_color.a) * colors.r
