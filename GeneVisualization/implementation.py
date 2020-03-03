@@ -57,44 +57,41 @@ def trilinear_interpolation(volume: Volume, x: float, y: float, z: float):
     #
     # return volume.data[coX, coY, coZ]
 
-    cx = x
-    cy = y
-    cz = z
+    ax = x
+    ay = y
+    az = z
 
-    if cx < 0 or cy < 0 or cz < 0 or cx >= volume.dim_x-1 or cy >= volume.dim_y-1 or cz >= volume.dim_z-1:
+    if ax < 0 or ay < 0 or az < 0 or ax >= volume.dim_x-1 or ay >= volume.dim_y-1 or az >= volume.dim_z-1:
         return 0
 
     x = int(math.floor(x))
     y = int(math.floor(y))
     z = int(math.floor(z))
 
-    val0 = volume.get_voxel(x, y, z)
-    val1 = volume.get_voxel(x + 1, y, z)
+    c000 = volume.get_voxel(x, y, z)
+    c100 = volume.get_voxel(x + 1, y, z)
+    c010 = volume.get_voxel(x, y + 1, z)
+    c110 = volume.get_voxel(x + 1, y + 1, z)
+    c001 = volume.get_voxel(x, y, z + 1)
+    c101 = volume.get_voxel(x + 1, y, z + 1)
+    c011 = volume.get_voxel(x, y + 1, z + 1)
+    c111 = volume.get_voxel(x + 1, y + 1, z + 1)
 
-    val2 = volume.get_voxel(x, y + 1, z)
-    val3 = volume.get_voxel(x + 1, y + 1, z)
-
-    val4 = volume.get_voxel(x, y, z + 1)
-    val5 = volume.get_voxel(x + 1, y, z + 1)
-
-    val6 = volume.get_voxel(x, y + 1, z + 1)
-    val7 = volume.get_voxel(x + 1, y + 1, z + 1)
-
-    alpha = cx - x
-    beta = cy - y
-    gamma = cz - z
+    xd = ax - x
+    yd = ay - y
+    zd = az - z
     # four linear interpolation
-    val01 = alpha * val1 + (1 - alpha) * val0
-    val23 = alpha * val3 + (1 - alpha) * val2
-    val45 = alpha * val5 + (1 - alpha) * val4
-    val67 = alpha * val7 + (1 - alpha) * val6
+    c00 = xd * c100 + (1 - xd) * c000
+    c01 = xd * c101 + (1 - xd) * c001
+    c10 = xd * c110 + (1 - xd) * c010
+    c11 = xd * c111 + (1 - xd) * c011
     # two bi-linear interpolation
-    val0123 = beta * val23 + (1 - beta) * val01
-    val4567 = beta * val67 + (1 - beta) * val45
+    c0 = yd * c10 + (1 - yd) * c00
+    c1 = yd * c11 + (1 - yd) * c01
     # one tri-linear interpolation
-    finalval = gamma * val4567 + (1 - gamma) * val0123
+    c = zd * c1 + (1 - zd) * c0
 
-    return math.floor(finalval)
+    return math.floor(c)
 
 
 def getVoxelGradient(volume: Volume, gradients: GradientVolume, x: float, y: float, z: float):
@@ -258,7 +255,7 @@ class RaycastRendererImplementation(RaycastRenderer):
                 image[(j * image_size + i) * 4 + 3] = alpha
 
     # TODO: Implement Compositing function. TFColor is already imported. self.tfunc is the current transfer function.
-    def render_compositing(self, view_matrix: np.ndarray, volume: Volume, image_size: int, image: np.ndarray, trilinear: bool=True, shading: bool=False):
+    def render_compositing(self, view_matrix: np.ndarray, volume: Volume, image_size: int, image: np.ndarray, trilinear: bool=True, shading: bool=True):
         # Clear the image
         self.clear_image()
 
@@ -278,8 +275,8 @@ class RaycastRendererImplementation(RaycastRenderer):
         volume_center = [volume.dim_x / 2, volume.dim_y / 2, volume.dim_z / 2]
 
         # Define a step size to make the loop faster
-        step = 10 if self.interactive_mode else 1
-        step_k = 10
+        step = 2 if self.interactive_mode else 1
+        step_k = 2
 
         if shading:
             # ambient reflection constant, the ratio of reflection of the ambient term present in all points in the scene rendered
@@ -368,7 +365,7 @@ class RaycastRendererImplementation(RaycastRenderer):
 
     # TODO: Implement function to render multiple energy volumes and annotation volume as a silhouette.
     def render_mouse_brain(self, view_matrix: np.ndarray, annotation_volume: Volume, energy_volumes: dict,
-                           image_size: int, image: np.ndarray, trilinear: bool=True):
+                           image_size: int, image: np.ndarray, trilinear: bool=True, shading: bool=True):
         # TODO: Implement your code considering these volumes (annotation_volume, and energy_volumes)
         # Clear the image
         self.clear_image()
@@ -391,23 +388,24 @@ class RaycastRendererImplementation(RaycastRenderer):
         # Center of the annotation volume (3-dimensional)
         volume_center = [annotation_volume.dim_x / 2, annotation_volume.dim_y / 2, annotation_volume.dim_z / 2]
 
-        # ambient reflection coefficient, assuming light source is white
-        shading_ambient_coeff = TFColor(0.1, 0.1, 0.1, 1.0)
-        # diffuse reflection coefficient
-        shading_diff_coeff = 0.5
-        # specular reflection coefficient
-        shading_spec_coeff = 0.4
-        # exponent used to approximate highlight
-        shading_alpha = 10
+        if shading:
+            # ambient reflection constant, the ratio of reflection of the ambient term present in all points in the scene rendered
+            # we assume the light source is white
+            shading_ambient_coeff = TFColor(0.1, 0.1, 0.1, 1.0)
+            # diffuse reflection constant, the ratio of reflection of the diffuse term of incoming light
+            shading_diff_coeff = 0.7  # 0.5
+            # specular reflection constant, the ratio of reflection of the specular term of incoming light
+            shading_spec_coeff = 0.2  # 0.4
+            # shininess constant for this material, which is larger for surfaces that are smoother and more mirror-like
+            shading_alpha = 10
 
         max_energy_volume = []
+        gradients = []
         for key, volume in energy_volumes.items():
             # print(key, volume)
-            # print(volume.get_maximum())
             max_energy_volume.append(volume.get_maximum())
             # print(np.histogram(volume.data, bins=np.arange(volume.get_maximum() + 1))[0])
             # print(np.arange(volume.get_maximum() + 1))
-            # print("dim_x: ", volume.dim_x, "dim_y: ", volume.dim_y, "dim_z: ", volume.dim_z)
             # plt.bar(np.arange(volume.get_maximum()),
             #         np.histogram(volume.data, bins=np.arange(volume.get_maximum() + 1))[0], width=0.1)
             # plt.ylim((0, 1000))
@@ -418,10 +416,7 @@ class RaycastRendererImplementation(RaycastRenderer):
             print("energy volume range: ", volume.get_minimum(), "-", volume.get_maximum())
             # Initialize GradientVolume
             # print("gradient computation info: ")
-            # gv = GradientVolume(volume)
-            # print("energy volume range: ", volume.get_minimum(), "-", volume.get_maximum())
-            # print("gradient volume info: ")
-            # print("max gradient magnitude: ", gv.get_max_gradient_magnitude())
+            gradients.append(GradientVolume(volume))
 
         # palette = [Colour(255, 0, 0),
         #            Colour(0, 255, 0),
@@ -451,23 +446,28 @@ class RaycastRendererImplementation(RaycastRenderer):
 
         # Define a step size to make the loop faster
         step = 2 if self.interactive_mode else 1
-        step_k = 10
+        step_k = 2
+
+        borders = math.sqrt(math.pow(annotation_volume.dim_x * view_vector[0], 2)
+                            + math.pow(annotation_volume.dim_y * view_vector[1], 2)
+                            + math.pow(annotation_volume.dim_z * view_vector[2], 2))
 
         for i in range(0, image_size, step):
             for j in range(0, image_size, step):
-                colors = TFColor()  # initialize color
-                for k in range(0, image_size, step_k):
+                colors = TFColor(0, 0, 0, 1)  # initialize color
+                voxel_color = TFColor()
+                for k in range(int(borders/2), -int(borders/2), -step_k):
                     # Get the voxel coordinate X
                     voxel_coordinate_x = u_vector[0] * (i - image_center) + v_vector[0] * (j - image_center) + \
-                                         view_vector[0] * (k - image_center) + volume_center[0]
+                                         view_vector[0] * k + volume_center[0]
 
                     # Get the voxel coordinate Y
                     voxel_coordinate_y = u_vector[1] * (i - image_center) + v_vector[1] * (j - image_center) + \
-                                         view_vector[1] * (k - image_center) + volume_center[1]
+                                         view_vector[1] * k + volume_center[1]
 
                     # Get the voxel coordinate Y
                     voxel_coordinate_z = u_vector[2] * (i - image_center) + v_vector[2] * (j - image_center) + \
-                                         view_vector[2] * (k - image_center) + volume_center[2]
+                                         view_vector[2] * k + volume_center[2]
                     energy_values = []
                     for x in energy_volumes:
                         volume = energy_volumes[x]
@@ -478,34 +478,40 @@ class RaycastRendererImplementation(RaycastRenderer):
                         else:
                             value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
                         energy_values.append(value)
-                    # if value>0 and gv.get_gradient(int(voxel_coordinate_x), int(voxel_coordinate_y), int(voxel_coordinate_z))>=1:
-                    #     # print(voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
-                    #     # print(gv.get_gradient(int(voxel_coordinate_x), int(voxel_coordinate_y), int(voxel_coordinate_z)))
-                    #     print(value)
 
                     # Compositing function
-                    # ind = energy_values.index(max(energy_values))
-                    # self.tfunc.update_control_point_color(2, palette[ind])
-                    new_color = self.tfunc.get_color(max(energy_values))
-                    # print(new_color)
-                    colors.r = new_color.a * new_color.r + (1 - new_color.a) * colors.r
-                    colors.g = new_color.a * new_color.g + (1 - new_color.a) * colors.g
-                    colors.b = new_color.a * new_color.b + (1 - new_color.a) * colors.b
-                    colors.a = new_color.a + (1 - new_color.a) * colors.a
+                    tf_color = self.tfunc.get_color(max(energy_values))
+                    voxel_color.r = tf_color.r
+                    voxel_color.g = tf_color.g
+                    voxel_color.b = tf_color.b
+                    voxel_color.a = tf_color.a
+                    if shading:
+                        vg = getVoxelGradient(volume, gradients[np.argmax(energy_values)], voxel_coordinate_x, voxel_coordinate_y,
+                                              voxel_coordinate_z)
+                        # dotproductln = (view_vector[0] * vg.x + view_vector[1] * vg.y + view_vector[2] * vg.z)
+                        dotproductln = np.dot(view_vector, np.array([vg.x, vg.y, vg.z]))
+                        if dotproductln > 0:
+                            ln = dotproductln / vg.magnitude
+                            vr = math.pow(ln, shading_alpha)
+                            voxel_color.r = shading_ambient_coeff.r + voxel_color.r * shading_diff_coeff * ln + shading_spec_coeff * vr
+                            voxel_color.g = shading_ambient_coeff.g + voxel_color.g * shading_diff_coeff * ln + shading_spec_coeff * vr
+                            voxel_color.b = shading_ambient_coeff.b + voxel_color.b * shading_diff_coeff * ln + shading_spec_coeff * vr
+                    colors.r = (1 - voxel_color.a) * colors.r + voxel_color.a * voxel_color.r
+                    colors.g = (1 - voxel_color.a) * colors.g + voxel_color.a * voxel_color.g
+                    colors.b = (1 - voxel_color.a) * colors.b + voxel_color.a * voxel_color.b
+                    colors.a = (1 - voxel_color.a) * colors.a + voxel_color.a
 
                 # Set colors
                 red = colors.r
                 green = colors.g
                 blue = colors.b
                 alpha = colors.a
-                # print(red, green, blue, alpha)
 
                 # Compute the color value (0...255)
                 red = math.floor(red * 255) if red < 255 else 255
                 green = math.floor(green * 255) if green < 255 else 255
                 blue = math.floor(blue * 255) if blue < 255 else 255
                 alpha = math.floor(alpha * 255) if alpha < 255 else 255
-                # print(red, green, blue, alpha)
 
                 # Assign color to the pixel i, j
                 image[(j * image_size + i) * 4] = red
