@@ -74,42 +74,24 @@ class GradientVolume:
         Computes the gradient for the current volume
         """
         # this just initializes all gradients to the vector (0,0,0)
-        self.data = [ZERO_GRADIENT.magnitude] * (self.volume.dim_x * self.volume.dim_y * self.volume.dim_z)
-        # gm = []
-        # vv = []
+        self.data = [ZERO_GRADIENT] * (self.volume.dim_x * self.volume.dim_y * self.volume.dim_z)
         for i in range(1, self.volume.dim_x-1):
             for j in range(1, self.volume.dim_y-1):
                 for k in range(1, self.volume.dim_z-1):
-                    s1_x = self.volume.data[i - 1, j, k]
-                    s2_x = self.volume.data[i + 1, j, k]
-                    s_x = (s2_x - s1_x) / 2
-                    s1_y = self.volume.data[i, j - 1, k]
-                    s2_y = self.volume.data[i, j + 1, k]
-                    s_y = (s2_y - s1_y) / 2
-                    s1_z = self.volume.data[i, j, k - 1]
-                    s2_z = self.volume.data[i, j, k + 1]
-                    s_z = (s2_z - s1_z) / 2
-                    s = np.array([s_x, s_y, s_z])
-                    if np.linalg.norm(s)!=0:
-                        normalized = s / np.linalg.norm(s)
-                    else:
-                        normalized = np.array([0, 0, 0])
-                    if np.isnan(normalized).any():
-                        normalized = np.array([0, 0, 0])
-                    self.data[i + self.volume.dim_x * (j + self.volume.dim_y * k)] = \
-                        VoxelGradient(normalized[0], normalized[1], normalized[2]).magnitude
-                    # gm.append(self.data[i + self.volume.dim_x * (j + self.volume.dim_y * k)].magnitude)
-                    # vv.append(self.volume.data[i, j, k])
-                    # if self.data[i + self.volume.dim_x * (j + self.volume.dim_y * k)].magnitude!=0:
-                    #     print("scalar volume value: ", self.volume.data[i, j, k])
-                    #     print("gradient magnitude: ", self.data[i + self.volume.dim_x * (j + self.volume.dim_y * k)].magnitude)
-        print(len(self.data))
-        # print("range volume value: ", min(vv), "-", max(vv))
-        # print("range gradient magnitude: ", min(gm), "-", max(gm))
-        # ind = [i for i, j in enumerate(gm) if j == max(gm)]
-        # maxg_vv = [vv[i] for i in ind]
-        # print("volume values where gradient magnitude is max: ", maxg_vv)
-        # print(self.data)
+                    gx = (self.volume.data[i + 1, j, k] - self.volume.data[i - 1, j, k]) / 2.0
+                    gy = (self.volume.data[i, j + 1, k] - self.volume.data[i, j - 1, k]) / 2.0
+                    gz = (self.volume.data[i, j, k + 1] - self.volume.data[i, j, k - 1]) / 2.0
+                    self.data[i + self.volume.dim_x * (j + self.volume.dim_y * k)] = VoxelGradient(gx, gy, gz)
+                    # s = np.array([gx, gy, gz])
+                    # if np.linalg.norm(s)!=0:
+                    #     normalized = s / np.linalg.norm(s)
+                    # else:
+                    #     normalized = np.array([0, 0, 0])
+                    # if np.isnan(normalized).any():
+                    #     normalized = np.array([0, 0, 0])
+                    # self.data[i + self.volume.dim_x * (j + self.volume.dim_y * k)] = \
+                    #     VoxelGradient(normalized[0], normalized[1], normalized[2])
+        print("gradient computation finished")
 
     def get_max_gradient_magnitude(self):
         if self.max_magnitude < 0:
