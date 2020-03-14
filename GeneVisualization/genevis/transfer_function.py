@@ -44,11 +44,28 @@ class TransferFunction:
         return idx
 
     def set_test_function(self):
-        self.add_control_point(0, .0, .0, .0, .0)
-        self.add_control_point(40, .0, .0, .0, .0)
-        self.add_control_point(75, 1., .666, .0, 1.)
-        self.add_control_point(103, .0, .0, .0, .5)
-        self.add_control_point(205, .0, .0, .0, .0)
+        # self.add_control_point(0, .0, .0, .0, .0)
+        # self.add_control_point(40, .0, .0, .0, .0)
+        # self.add_control_point(75, 1., .666, .0, 1.)
+        # self.add_control_point(103, .0, .0, .0, .5)
+        # self.add_control_point(205, .0, .0, .0, .0)
+        self.add_control_point(0, 0., .0, .0, .0)
+        self.add_control_point(4, 0., .0, .0, .0)
+        self.add_control_point(5, .6, .8, 1., .05)
+        self.add_control_point(10, .6, .8, 1., .1)
+        self.add_control_point(15, .6, .8, 1., .2)
+        self.add_control_point(20, .6, .8, 1., .3)
+        self.add_control_point(25, .6, .8, 1., .5)
+        self.add_control_point(30, 1., .0, .0, .2)
+        self.add_control_point(40, 1., .0, .0, .6)
+        self.add_control_point(50, 1., .0, .0, 1.)
+        self.add_control_point(58, 1., .0, .0, 1.)
+        self.add_control_point(71, 1., .0, .0, 1.)
+        # self.add_control_point(0, 0., .0, .0, .0)
+        # self.add_control_point(16000, 0., .0, .0, .0)
+        # self.add_control_point(16001, .6, .8, 1., 0.05)
+        # self.add_control_point(16002, 0., 0., .0, .0)
+        # self.add_control_point(17692, 0., 0., .0, .0)
 
     def get_color(self, value: int) -> 'TFColor':
         return self.LUT[self.computeLUTindex(value)]

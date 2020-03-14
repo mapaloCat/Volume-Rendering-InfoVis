@@ -159,7 +159,6 @@ class RaycastRenderer(ABC):
             glDeleteTextures(1, [self.texture_id])
             self.texture_id = -1
 
-        print("set_volume function")
         self.tfunc.set_test_function()
 
     def add_energy_volume(self, key, volume):
