@@ -6,6 +6,7 @@ from collections.abc import ValuesView
 import math
 import matplotlib.pyplot as plt
 from wx import Colour
+from collections import Counter
 
 # TODO: Implement trilinear interpolation
 def get_voxel(volume: Volume, x: float, y: float, z: float):
@@ -276,7 +277,7 @@ class RaycastRendererImplementation(RaycastRenderer):
                 image[(j * image_size + i) * 4 + 3] = alpha
 
     # TODO: Implement Compositing function. TFColor is already imported. self.tfunc is the current transfer function.
-    def render_compositing(self, view_matrix: np.ndarray, volume: Volume, image_size: int, image: np.ndarray, trilinear: bool=True, shading: bool=False):
+    def render_compositing(self, view_matrix: np.ndarray, volume: Volume, image_size: int, image: np.ndarray, trilinear: bool=True, shading: bool=True):
         # Clear the image
         self.clear_image()
 
@@ -297,7 +298,7 @@ class RaycastRendererImplementation(RaycastRenderer):
 
         # Define a step size to make the loop faster
         step = 2 if self.interactive_mode else 1
-        step_k = 2
+        step_k = 1
 
         print(volume.get_maximum())
 
@@ -318,7 +319,7 @@ class RaycastRendererImplementation(RaycastRenderer):
                             + math.pow(volume.dim_y * view_vector[1], 2)
                             + math.pow(volume.dim_z * view_vector[2], 2))
 
-        temp = set()
+        temp = []
 
         for i in range(0, image_size, step):
             for j in range(0, image_size, step):
@@ -345,13 +346,11 @@ class RaycastRendererImplementation(RaycastRenderer):
                         value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
 
         #             if value >= 15564:
-        #                 temp.add(value)
-        # print(sorted(temp))
+        #                 temp.append(value)
+        # print(sorted(temp, key=Counter(temp).get, reverse=True))
                     # Compositing function
-                    # if value != 16001:
-                    #     value = 0
-                    # else:
-                    #     print(value)
+                    if value > 17808:
+                        value = 0  # remove extreme values that correspond to big integers
                     tf_color = self.tfunc.get_color(value)
                     voxel_color.r = tf_color.r
                     voxel_color.g = tf_color.g
@@ -359,7 +358,6 @@ class RaycastRendererImplementation(RaycastRenderer):
                     voxel_color.a = tf_color.a
                     if shading:
                         vg = get_voxel_gradient(volume, gradients, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
-                        # dotproductln = (view_vector[0] * vg.x + view_vector[1] * vg.y + view_vector[2] * vg.z)
                         dotproductln = np.dot(view_vector, np.array([vg.x, vg.y, vg.z]))
                         if dotproductln > 0:
                             ln = dotproductln/vg.magnitude
@@ -462,31 +460,17 @@ class RaycastRendererImplementation(RaycastRenderer):
         self.tfunc.init(0, max(max_energy_volume))
 
         # set the control points
-        # self.tfunc.add_control_point(0, 0., .0, .0, .0)
-        # self.tfunc.add_control_point(2, 0., .0, .0, .0)
-        # self.tfunc.add_control_point(4, 1., .666, .0, 1.)
-        # self.tfunc.add_control_point(13, 0., 0., .0, 0.5)
-        # self.tfunc.add_control_point(17, 0., 0., .0, .0)
-        # self.tfunc.add_control_point(21, 1., .0, .0, 1.)
-        # self.tfunc.add_control_point(39, 0., .0, .0, 0.5)
-        # self.tfunc.add_control_point(87, 0., .0, .0, .0)
-        # self.tfunc.add_control_point(0, 0., .0, .0, .0)
-        # self.tfunc.add_control_point(10, 0., .0, .0, .0)
-        # self.tfunc.add_control_point(21, 1., .0, .0, 1.)
-        # self.tfunc.add_control_point(39, 1., .0, .0, 1.)
-        # self.tfunc.add_control_point(80, 1., .0, .0, 1.)
         self.tfunc.add_control_point(0, 0., .0, .0, .0)
-        self.tfunc.add_control_point(4, 0., .0, .0, .0)
-        self.tfunc.add_control_point(5, .6, .8, 1., .05)
-        self.tfunc.add_control_point(10, .6, .8, 1., .1)
-        self.tfunc.add_control_point(15, .6, .8, 1., .2)
-        self.tfunc.add_control_point(20, .6, .8, 1., .3)
-        self.tfunc.add_control_point(25, .6, .8, 1., .5)
-        self.tfunc.add_control_point(30, 1., .0, .0, .15)
-        self.tfunc.add_control_point(40, 1., .0, .0, .5)
-        self.tfunc.add_control_point(50, 1., .0, .0, .8)
-        self.tfunc.add_control_point(58, 1., .0, .0, 1.)
-        self.tfunc.add_control_point(67, 1., .0, .0, 1.)
+        self.tfunc.add_control_point(3, 0., .0, .0, .0)
+        self.tfunc.add_control_point(5, .7, 1., .4, .05)
+        self.tfunc.add_control_point(8, 0., .0, .0, .0)
+        self.tfunc.add_control_point(20, 1., .0, .0, .0)
+        self.tfunc.add_control_point(30, 1., .0, .0, .1)
+        self.tfunc.add_control_point(40, 1., .0, .0, .2)
+        self.tfunc.add_control_point(50, 1., .0, .0, .4)
+        self.tfunc.add_control_point(60, 1., .0, .0, .8)
+        self.tfunc.add_control_point(70, 1., .0, .0, 1.)
+        self.tfunc.add_control_point(83, 0., .0, .0, .0)
 
         # self.tfunc.update_control_point_color(2, palette[9])
 

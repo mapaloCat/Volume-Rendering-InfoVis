@@ -406,7 +406,10 @@ class LoadDataTab(wx.Panel):
             volume_data = volume_io.data
             volume = Volume(volume_data)
 
-            TFUNC.init(volume.get_minimum(), volume.get_maximum())
+            if volume.get_maximum() > 17808:
+                TFUNC.init(volume.get_minimum(), 17808)
+            else:
+                TFUNC.init(volume.get_minimum(), volume.get_maximum())
             self.file_name_label.SetLabel(f"File name: {basename(pathname)}")
             self.dimensions_label.SetLabel(f"Dimensions: {volume_io.dim_x}x{volume_io.dim_y}x{volume_io.dim_z}")
             self.value_range_label.SetLabel(f"Voxel value range: {volume.get_minimum():.3g}-{volume.get_maximum():.3g}")
