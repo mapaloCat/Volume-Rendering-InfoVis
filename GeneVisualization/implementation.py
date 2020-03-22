@@ -141,7 +141,7 @@ class RaycastRendererImplementation(RaycastRenderer):
         """Clears the image data"""
         self.image.fill(0)
 
-    def render_slicer(self, view_matrix: np.ndarray, volume: Volume, image_size: int, image: np.ndarray, trilinear: bool=False):
+    def render_slicer(self, view_matrix: np.ndarray, volume: Volume, image_size: int, image: np.ndarray, trilinear: bool=True):
         # Clear the image
         self.clear_image()
 
@@ -227,14 +227,14 @@ class RaycastRendererImplementation(RaycastRenderer):
         step = 10 if self.interactive_mode else 1
         step_k = 10
 
-        volsize = math.sqrt(math.pow(volume.dim_x * view_vector[0], 2)
+        diagonal = math.sqrt(math.pow(volume.dim_x * view_vector[0], 2)
                             + math.pow(volume.dim_y * view_vector[1], 2)
                             + math.pow(volume.dim_z * view_vector[2], 2))
 
         for i in range(0, image_size, step):
             for j in range(0, image_size, step):
                 values = []
-                for k in range(int(volsize/2), -int(volsize/2), -step_k):
+                for k in range(int(diagonal/2), -int(diagonal/2), -step_k):
                     # Get the voxel coordinate X
                     voxel_coordinate_x = u_vector[0] * (i - image_center) + v_vector[0] * (j - image_center) + \
                                          view_vector[0] * k + volume_center[0]
@@ -297,7 +297,7 @@ class RaycastRendererImplementation(RaycastRenderer):
         volume_center = [volume.dim_x / 2, volume.dim_y / 2, volume.dim_z / 2]
 
         # Define a step size to make the loop faster
-        step = 2 if self.interactive_mode else 1
+        step = 20 if self.interactive_mode else 1
         step_k = 1
 
         print(volume.get_maximum())
@@ -314,19 +314,21 @@ class RaycastRendererImplementation(RaycastRenderer):
             shading_alpha = 10
             # compute volume gradients
             gradients = GradientVolume(volume)
+            print("gradient volume maximum value:", gradients.get_max_gradient_magnitude())
 
-        volsize = math.sqrt(math.pow(volume.dim_x * view_vector[0], 2)
-                            + math.pow(volume.dim_y * view_vector[1], 2)
-                            + math.pow(volume.dim_z * view_vector[2], 2))
+        diagonal = math.sqrt(math.pow(volume.dim_x * view_vector[0], 2)
+                             + math.pow(volume.dim_y * view_vector[1], 2)
+                             + math.pow(volume.dim_z * view_vector[2], 2))
 
-        temp = []
+        # diagonal = math.sqrt(math.pow(volume.dim_x, 2) + math.pow(volume.dim_y, 2) + math.pow(volume.dim_z, 2))
+
+        # temp = []
 
         for i in range(0, image_size, step):
             for j in range(0, image_size, step):
                 colors = TFColor(0, 0, 0, 1) # initialize color
                 voxel_color = TFColor()
-                # for k in range(0, image_size, step_k):
-                for k in range(int(volsize/2), -int(volsize/2), -step_k):
+                for k in range(int(diagonal/2), -int(diagonal/2), -step_k):
                     # Get the voxel coordinate X
                     voxel_coordinate_x = u_vector[0] * (i - image_center) + v_vector[0] * (j - image_center) + \
                                          view_vector[0] * k + volume_center[0]
@@ -349,8 +351,8 @@ class RaycastRendererImplementation(RaycastRenderer):
         #                 temp.append(value)
         # print(sorted(temp, key=Counter(temp).get, reverse=True))
                     # Compositing function
-                    if value > 17808:
-                        value = 0  # remove extreme values that correspond to big integers
+                    # if value > 17808:
+                    #     value = 0  # remove extreme values that correspond to big integers
                     tf_color = self.tfunc.get_color(value)
                     voxel_color.r = tf_color.r
                     voxel_color.g = tf_color.g
@@ -425,11 +427,11 @@ class RaycastRendererImplementation(RaycastRenderer):
             # shininess constant for this material, which is larger for surfaces that are smoother and more mirror-like
             shading_alpha = 10
 
-        max_energy_volume = []
+        # max_energy_volume = []
         gradients = []
         for key, volume in energy_volumes.items():
             # print(key, volume)
-            max_energy_volume.append(volume.get_maximum())
+            # max_energy_volume.append(volume.get_maximum())
             # print(np.histogram(volume.data, bins=np.arange(volume.get_maximum() + 1))[0])
             # print(np.arange(volume.get_maximum() + 1))
             # plt.bar(np.arange(volume.get_maximum()),
@@ -444,25 +446,29 @@ class RaycastRendererImplementation(RaycastRenderer):
             # print("gradient computation info: ")
             gradients.append(GradientVolume(volume))
 
+        # calculate the gradient of the annotation volume
+        gradients.append(GradientVolume(annotation_volume))
+
         # a palette of 10 random colors
-        palette = [Colour(255, 0, 0),
-                   Colour(0, 255, 0),
-                   Colour(0, 0, 255),
-                   Colour(255, 255, 0),
-                   Colour(255, 0, 255),
-                   Colour(0, 255, 255),
-                   Colour(128, 128, 0),
-                   Colour(240, 128, 128),
-                   Colour(152, 251, 152),
-                   Colour(139, 69, 19)]
+        # palette = [Colour(255, 0, 0),
+        #            Colour(0, 255, 0),
+        #            Colour(0, 0, 255),
+        #            Colour(255, 255, 0),
+        #            Colour(255, 0, 255),
+        #            Colour(0, 255, 255),
+        #            Colour(128, 128, 0),
+        #            Colour(240, 128, 128),
+        #            Colour(152, 251, 152),
+        #            Colour(139, 69, 19)]
 
         # Initialize TF
-        self.tfunc.init(0, max(max_energy_volume))
+        # self.tfunc.init(0, max(max_energy_volume))
+        self.tfunc.init(0, annotation_volume.get_maximum())
 
         # set the control points
         self.tfunc.add_control_point(0, 0., .0, .0, .0)
         self.tfunc.add_control_point(3, 0., .0, .0, .0)
-        self.tfunc.add_control_point(5, .7, 1., .4, .05)
+        self.tfunc.add_control_point(5, .7, 1., .4, .1)
         self.tfunc.add_control_point(8, 0., .0, .0, .0)
         self.tfunc.add_control_point(20, 1., .0, .0, .0)
         self.tfunc.add_control_point(30, 1., .0, .0, .1)
@@ -471,24 +477,26 @@ class RaycastRendererImplementation(RaycastRenderer):
         self.tfunc.add_control_point(60, 1., .0, .0, .8)
         self.tfunc.add_control_point(70, 1., .0, .0, 1.)
         self.tfunc.add_control_point(83, 0., .0, .0, .0)
-
-        # self.tfunc.update_control_point_color(2, palette[9])
+        self.tfunc.add_control_point(15563, 0., .0, .0, .0)
+        self.tfunc.add_control_point(15564, .6, .8, 1., 0.03)
+        self.tfunc.add_control_point(17692, .6, .8, 1., 0.03)
+        self.tfunc.add_control_point(17693, 0., 0., .0, .0)
 
         # Define a step size to make the loop faster
         step = 2 if self.interactive_mode else 1
-        step_k = 2
+        step_k = 1
 
-        volsize = math.sqrt(math.pow(annotation_volume.dim_x * view_vector[0], 2)
+        diagonal = math.sqrt(math.pow(annotation_volume.dim_x * view_vector[0], 2)
                             + math.pow(annotation_volume.dim_y * view_vector[1], 2)
                             + math.pow(annotation_volume.dim_z * view_vector[2], 2))
 
-        old_index = 0
+        # old_index = 0
 
         for i in range(0, image_size, step):
             for j in range(0, image_size, step):
                 colors = TFColor(0, 0, 0, 1)  # initialize color
                 voxel_color = TFColor()
-                for k in range(int(volsize/2), -int(volsize/2), -step_k):
+                for k in range(int(diagonal/2), -int(diagonal/2), -step_k):
                     # Get the voxel coordinate X
                     voxel_coordinate_x = u_vector[0] * (i - image_center) + v_vector[0] * (j - image_center) + \
                                          view_vector[0] * k + volume_center[0]
@@ -512,6 +520,22 @@ class RaycastRendererImplementation(RaycastRenderer):
                             value = get_voxel(volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
                         energy_values.append(value)
                         vols.append(volume)
+                    mev = max(energy_values)
+                    if trilinear:
+                        ann_value = trilinear_interpolation(annotation_volume, voxel_coordinate_x, voxel_coordinate_y,
+                                                        voxel_coordinate_z)
+                    else:
+                        ann_value = get_voxel(annotation_volume, voxel_coordinate_x, voxel_coordinate_y, voxel_coordinate_z)
+                    # if ann_value < 15564:
+                    if ann_value != 15818:
+                        ann_value = 0
+                    if ann_value == 0 and mev > 0:
+                        energy_values = [0]
+                        vols = [volume]
+                    if ann_value > 0 and ((3 < mev < 8) or (20 < mev < 83)):
+                        ann_value = 0
+                    energy_values.append(ann_value)
+                    vols.append(annotation_volume)
 
                     # update control points
                     # if np.argmax(energy_values) != old_index:
@@ -519,6 +543,7 @@ class RaycastRendererImplementation(RaycastRenderer):
                     #     self.tfunc.update_control_point_color(2, palette[np.argmax(energy_values)])
                     #     self.tfunc.update_control_point_color(3, palette[np.argmax(energy_values)])
                     #     self.tfunc.update_control_point_color(4, palette[np.argmax(energy_values)])
+
                     # Compositing function
                     tf_color = self.tfunc.get_color(max(energy_values))
                     voxel_color.r = tf_color.r

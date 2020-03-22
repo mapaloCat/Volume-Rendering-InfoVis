@@ -44,15 +44,16 @@ class TransferFunction:
         return idx
 
     def set_test_function(self):
+        # orange dataset
         # self.add_control_point(0, .0, .0, .0, .0)
         # self.add_control_point(40, .0, .0, .0, .0)
         # self.add_control_point(75, 1., .666, .0, 1.)
         # self.add_control_point(103, .0, .0, .0, .5)
         # self.add_control_point(205, .0, .0, .0, .0)
+        # energy volumes and combination
         self.add_control_point(0, 0., .0, .0, .0)
         self.add_control_point(3, 0., .0, .0, .0)
-        # self.add_control_point(5, .957, .643, .376, .05)
-        self.add_control_point(5, .7, 1., .4, .05)
+        self.add_control_point(5, .7, 1., .4, .1)
         self.add_control_point(8, 0., .0, .0, .0)
         self.add_control_point(20, 1., .0, .0, .0)
         self.add_control_point(30, 1., .0, .0, .1)
@@ -61,6 +62,11 @@ class TransferFunction:
         self.add_control_point(60, 1., .0, .0, .8)
         self.add_control_point(70, 1., .0, .0, 1.)
         self.add_control_point(83, 0., .0, .0, .0)
+        self.add_control_point(15563, 0., .0, .0, .0)
+        self.add_control_point(15564, .6, .8, 1., 0.03)
+        self.add_control_point(17692, .6, .8, 1., 0.03)
+        self.add_control_point(17693, 0., 0., .0, .0)
+        # annotation volumes
         # self.add_control_point(0, 0., .0, .0, .0)
         # self.add_control_point(15749, 0., .0, .0, .0)
         # self.add_control_point(15750, .827, .533, .38, 0.2)
@@ -77,20 +83,6 @@ class TransferFunction:
         # self.add_control_point(16918, 0., .0, .0, .0)
         # self.add_control_point(16919, .827, .757, .38, 0.2)
         # self.add_control_point(16920, 0., 0., .0, .0)
-        # self.add_control_point(17692, 0., 0., .0, .0)
-        # self.add_control_point(0, 0., .0, .0, .0)
-        # self.add_control_point(15817, 0., .0, .0, .0)
-        # self.add_control_point(15818, .7, 1., .4, 0.2)
-        # self.add_control_point(15819, 0., 0., .0, .0)
-        # self.add_control_point(16000, 0., .0, .0, .0)
-        # self.add_control_point(16001, .6, .8, 1., 0.2)
-        # self.add_control_point(16002, 0., 0., .0, .0)
-        # self.add_control_point(16113, 0., .0, .0, .0)
-        # self.add_control_point(16114, .827, .757, .38, 0.2)
-        # self.add_control_point(16115, 0., 0., .0, .0)
-        # self.add_control_point(15783, 0., 0., .0, .0)
-        # self.add_control_point(15784, .757, .38, .827, 0.2)
-        # self.add_control_point(15785, 0., 0., .0, .0)
         # self.add_control_point(17692, 0., 0., .0, .0)
 
     def get_color(self, value: int) -> 'TFColor':
